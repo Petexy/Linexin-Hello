@@ -21,6 +21,7 @@ _ = gettext.gettext
 
 # sudo_manager is injected at runtime by the widget loader
 sudo_manager: Any = None
+translate_dialog: Any = None  # Injected by linexin-center at runtime
 
 # Icon directory for hello widget app icons
 HELLO_ICONS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hello-icons")
@@ -279,6 +280,8 @@ class LinexinHelloWidget(Gtk.Box):
                     )
                     err.add_response("ok", _("OK"))
                     err.connect("response", lambda d, r: d.close())
+                    if translate_dialog:
+                        translate_dialog(err)
                     err.present()
             dlg.close()
 
@@ -288,6 +291,8 @@ class LinexinHelloWidget(Gtk.Box):
             dialog.response("authenticate")
 
         entry.connect("activate", on_entry_activate)
+        if translate_dialog:
+            translate_dialog(dialog)
         dialog.present()
 
     # ---- Installation logic ----
