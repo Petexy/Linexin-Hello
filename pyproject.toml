@@ -1,0 +1,20 @@
+[project]
+name = "linexin-hello"
+version = "1.1.0"
+description = "Linexin Hello"
+license = "GPL-3.0-only"
+requires-python = ">=3.10"
+authors = [
+    {name = "Petexy"},
+]
+dependencies = [
+    "PyGObject",
+]
+
+[project.urls]
+Homepage = "https://github.com/Petexy/Linexin-Hello"
+Repository = "https://github.com/Petexy/Linexin-Hello"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
