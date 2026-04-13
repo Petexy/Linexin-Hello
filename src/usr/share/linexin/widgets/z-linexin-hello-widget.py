@@ -5,6 +5,7 @@ import locale
 import os
 import subprocess
 import threading
+import webbrowser
 from typing import Any
 
 gi.require_version("Gtk", "4.0")
@@ -26,21 +27,50 @@ translate_dialog: Any = None  # Injected by linexin-center at runtime
 # Icon directory for hello widget app icons
 HELLO_ICONS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hello-icons")
 
+# Quick links shown in the welcome section
+QUICK_LINKS = [
+    {
+        "label": "Source Code",
+        "description": "Browse and contribute to Linexin on GitHub",
+        "icon": "application-x-addon-symbolic",
+        "url": "https://github.com/Petexy/Linexin",
+    },
+    {
+        "label": "Report a Bug",
+        "description": "Help us improve by reporting issues",
+        "icon": "dialog-warning-symbolic",
+        "url": "https://github.com/Petexy/Linexin/issues/new",
+    },
+    {
+        "label": "Donate",
+        "description": "Support the development of Linexin",
+        "icon": "emblem-favorite-symbolic",
+        "url": "https://paypal.me/Petexy",
+    },
+]
+
 # Real Arch repository packages — replace with Linexin apps later
 APP_CATALOG = [
     {
-        "name": "Alexy Assistant",
-        "description": "An AI-powered virtual assistant for your desktop",
-        "icon_file": "alexy-assistant.svg",
-        "icon_name": "web-browser-symbolic",
-        "package": "alexy-ai",
-    },
-    {
-        "name": "Package Manager",
+        "name": "Linexin Package Manager",
         "description": "Modern graphical package manager for Linexin",
         "icon_file": "linpama.svg",
         "icon_name": "system-file-manager-symbolic",
         "package": "linpama",
+    },
+    {
+        "name": "Desktop Presets",
+        "description": "A Linexin Center widget for managing desktop presets for both GNOME and KDE Plasma",
+        "icon_file": "desktop-presets.svg",
+        "icon_name": "multimedia-audio-player-symbolic",
+        "package": "linexin-desktop-presets",
+    },
+    {
+        "name": "Steam",
+        "description": "The ultimate destination for playing, discussing, and creating games",
+        "icon_file": "steam.png",
+        "icon_name": "applications-games-symbolic",
+        "package": "steam",
     },
     {
         "name": "DaVinci Installer",
@@ -57,11 +87,11 @@ APP_CATALOG = [
         "package": "affinity-installer2",
     },
     {
-        "name": "Desktop Presets",
-        "description": "A Linexin Center widget for managing desktop presets for both GNOME and KDE Plasma",
-        "icon_file": "desktop-presets.svg",
-        "icon_name": "multimedia-audio-player-symbolic",
-        "package": "linexin-desktop-presets",
+        "name": "Alexy Assistant",
+        "description": "An AI-powered virtual assistant for your desktop",
+        "icon_file": "alexy-assistant.svg",
+        "icon_name": "web-browser-symbolic",
+        "package": "alexy-ai",
     },
     {
         "name": "Package Converter",
@@ -127,21 +157,30 @@ class LinexinHelloWidget(Gtk.Box):
 
         self.append(hero)
 
-        # --- Separator ---
-        sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
-        sep.set_margin_top(4)
-        sep.set_margin_bottom(4)
-        self.append(sep)
-
-        # --- Scrollable app grid ---
+        # --- Single scrollable container for all sections ---
         scrolled = Gtk.ScrolledWindow()
         scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         scrolled.set_vexpand(True)
 
+        scroll_content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+
+        # Horizontal layout: apps (70%) | links (30%)
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
+
+        # --- Left column: Recommended Apps (~70%) ---
+        left_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        left_col.set_hexpand(True)
+
+        apps_label = Gtk.Label(label=_("Recommended Apps"))
+        apps_label.add_css_class("title-3")
+        apps_label.set_halign(Gtk.Align.START)
+        apps_label.set_margin_top(4)
+        left_col.append(apps_label)
+
         self._grid = Gtk.FlowBox()
         self._grid.set_valign(Gtk.Align.START)
-        self._grid.set_max_children_per_line(3)
-        self._grid.set_min_children_per_line(2)
+        self._grid.set_max_children_per_line(2)
+        self._grid.set_min_children_per_line(1)
         self._grid.set_column_spacing(12)
         self._grid.set_row_spacing(12)
         self._grid.set_homogeneous(True)
@@ -151,7 +190,47 @@ class LinexinHelloWidget(Gtk.Box):
             card = self._create_app_card(app_info)
             self._grid.append(card)
 
-        scrolled.set_child(self._grid)
+        left_col.append(self._grid)
+        hbox.append(left_col)
+
+        # --- Right column: Quick Links (~30%) ---
+        right_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        right_col.set_size_request(280, -1)
+
+        links_label = Gtk.Label(label=_("Quick Links"))
+        links_label.add_css_class("title-3")
+        links_label.set_halign(Gtk.Align.START)
+        links_label.set_margin_top(4)
+        right_col.append(links_label)
+
+        links_box = Gtk.ListBox()
+        links_box.set_selection_mode(Gtk.SelectionMode.NONE)
+        links_box.add_css_class("boxed-list")
+
+        for link in QUICK_LINKS:
+            row = Adw.ActionRow(title=_(link["label"]), subtitle=_(link["description"]))
+            row.set_activatable(True)
+            icon = Gtk.Image.new_from_icon_name(link["icon"])
+            row.add_prefix(icon)
+            arrow = Gtk.Image.new_from_icon_name("go-next-symbolic")
+            row.add_suffix(arrow)
+            row.connect("activated", self._on_link_activated, link["url"])
+            links_box.append(row)
+
+        right_col.append(links_box)
+        hbox.append(right_col)
+
+        scroll_content.append(hbox)
+
+        # --- Footer ---
+        footer = Gtk.Label(label=_("Thank you for choosing Linexin ❤️"))
+        footer.add_css_class("dim-label")
+        footer.set_halign(Gtk.Align.CENTER)
+        footer.set_margin_top(16)
+        footer.set_margin_bottom(8)
+        scroll_content.append(footer)
+
+        scrolled.set_child(scroll_content)
         self.append(scrolled)
 
     def _create_app_card(self, app_info):
@@ -239,6 +318,12 @@ class LinexinHelloWidget(Gtk.Box):
         card.append(btn_box)
         self._download_buttons[pkg] = btn
         return card
+
+    # ---- Link handling ----
+
+    def _on_link_activated(self, row, url):
+        """Open the given URL in the default browser."""
+        webbrowser.open(url)
 
     # ---- Password prompt (mirrors Linexin Center pattern) ----
 
