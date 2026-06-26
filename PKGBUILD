@@ -1,8 +1,8 @@
 # Maintainer: Petexy <https://github.com/Petexy>
 
 pkgname=linexin-hello
-pkgver=1.1.0.r
-pkgrel=2
+pkgver=2.0.0.r
+pkgrel=1
 pkgdesc='Linexin Hello'
 url='https://github.com/Petexy'
 arch=('x86_64')
