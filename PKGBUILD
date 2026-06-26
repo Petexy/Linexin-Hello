@@ -1,7 +1,7 @@
 # Maintainer: Petexy <https://github.com/Petexy>
 
 pkgname=linexin-hello
-pkgver=2.0.0.r
+pkgver=2.0.1.r
 pkgrel=1
 pkgdesc='Linexin Hello'
 url='https://github.com/Petexy'

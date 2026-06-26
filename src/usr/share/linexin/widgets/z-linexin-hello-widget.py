@@ -956,7 +956,7 @@ class LinexinHelloWidget(Gtk.Box):
             sudo_manager.start_privileged_session()
             env = sudo_manager.get_env()
             process = subprocess.Popen(
-                [sudo_manager.wrapper_path, "pacman", "-S", "--noconfirm", pkg],
+                [sudo_manager.wrapper_path, "pacman", "-Sy", "--noconfirm", pkg],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
